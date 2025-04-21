@@ -6,13 +6,7 @@
 #include <map>
 #include <sstream>
 
-std::string Config::Values::to_str() {
-    std::ostringstream ss;
-    ss << "port: " << m_port << "\n";
-    ss << "discovery_node: " << m_discovery_node;
-
-    return ss.str();
-}
+std::string Config::Values::to_str() { return ""; }
 
 Result<Config::Values> Config::load() {
     std::ifstream file(m_path);
