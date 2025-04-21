@@ -11,11 +11,25 @@ TARGET = $(BINARYDIR)/jdmb
 
 LIBS += -lpthread
 
+# log
+_OBJECTS += log/logger_context.o
+_HEADERS += log/logger_context.h
+
+_HEADERS += log/logger_type.h
+
+_OBJECTS += log/logger.o
+_HEADERS += log/logger.h
+
 # util
-_OBJECTS += logger.o
-_HEADERS += logger.h
+_HEADERS += util/result.h
 
 # root
+_OBJECTS += config.o
+_HEADERS += config.h
+
+_OBJECTS += jdmb.o
+_HEADERS += jdmb.h
+
 _OBJECTS += main.o
 
 OBJECTS = $(patsubst %,$(OBJECTDIR)/%,$(_OBJECTS))
