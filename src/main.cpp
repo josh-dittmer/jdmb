@@ -2,10 +2,12 @@
 
 #include "jdmb.h"
 
-int main(int argc, char* argv[]) {
+#include "event/fd/fd.h"
+
+int start(int argc, char* argv[]) {
     // main logger, log level will always be ERROR regardless of config
     LoggerContext::Settings lc_settings;
-    lc_settings.m_log_level = LoggerType::ERROR;
+    lc_settings.m_log_level = LoggerType::DEBUG;
 
     LoggerContext main_logger_context = LoggerContext(lc_settings);
     Logger main_logger = Logger(main_logger_context.use("Main"));
@@ -35,4 +37,13 @@ int main(int argc, char* argv[]) {
     main_logger.log("JDMB stopped, exiting gracefully");
 
     return 0;
+}
+
+int main(int argc, char* argv[]) {
+    int res = start(argc, argv);
+
+    std::cout << FD::_OPEN_COUNT << " fds opened" << std::endl;
+    std::cout << FD::_CLOSE_COUNT << " fds closed" << std::endl;
+
+    return res;
 }

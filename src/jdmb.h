@@ -3,6 +3,7 @@
 #include "config.h"
 #include "log/logger.h"
 #include "log/logger_context.h"
+#include "net/tcp/client.h"
 
 #include <string>
 
@@ -20,8 +21,12 @@ class JDMB {
     void stop();
 
   private:
+    void discovery_node_connect(tcp::Client tcp_client, int timeout);
+
     Config::Values m_config_values;
 
     std::shared_ptr<LoggerContext> m_logger_context;
     Logger m_logger;
+
+    std::shared_ptr<EventLoop> m_event_loop;
 };

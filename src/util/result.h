@@ -15,7 +15,9 @@ class Error {
     std::string m_msg;
 };
 
-template <typename T, typename E = Error> class Result {
+typedef std::monostate None;
+
+template <typename T = None, typename E = Error> class Result {
   public:
     static Result Ok(T value) { return Result(std::move(value), true); }
     static Result Err(E error) { return Result(std::move(error), false); }
