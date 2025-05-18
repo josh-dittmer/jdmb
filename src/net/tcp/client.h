@@ -55,7 +55,8 @@ class ClientConnection : public IOHandle,
     typedef std::function<bool(std::shared_ptr<ClientConnection>,
                                const std::vector<uint8_t>&)>
         MessageCallback;
-    typedef std::function<void()> DisconnectCallback;
+    typedef std::function<void(std::shared_ptr<ClientConnection>)>
+        DisconnectCallback;
 
     ClientConnection(Private, std::shared_ptr<LoggerContext> logger_context,
                      addrinfo* addrs, addrinfo* curr_addr,

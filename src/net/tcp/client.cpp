@@ -104,6 +104,11 @@ bool ClientConnection::on_data(const std::shared_ptr<EventLoop>& event_loop_ptr,
         if (!res.is_ok()) {
             m_logger.debug("[" + m_addr_str +
                            "]: recv failed: " + res.unwrap_err().get_msg());
+
+            if (m_disconnect_cb) {
+                m_disconnect_cb(get_ptr());
+            }
+
             return false;
         }
 
@@ -122,6 +127,11 @@ bool ClientConnection::on_data(const std::shared_ptr<EventLoop>& event_loop_ptr,
         m_connected && (events & EPOLLHUP)) {
         m_logger.verbose("[" + m_addr_str +
                          "]: connection closed by remote peer");
+
+        if (m_disconnect_cb) {
+            m_disconnect_cb(get_ptr());
+        }
+
         return false;
     }
 

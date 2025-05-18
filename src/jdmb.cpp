@@ -24,6 +24,11 @@ bool JDMB::start() {
             return true;
         });
 
+        conn->on_disconnect([&](std::shared_ptr<tcp::ClientConnection> conn) {
+            m_logger.log("Connection to discovery node [" +
+                         conn->get_addr_str() + "] closed!");
+        });
+
         conn->send(util::str::str_to_bytes("Hello, world!"));
     });
 
