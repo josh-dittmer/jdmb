@@ -1,16 +1,26 @@
 #include "timer.h"
 
+#include "../util/unix.h"
 #include "event_loop.h"
 
 #include <sys/epoll.h>
 #include <sys/timerfd.h>
+#include <unistd.h>
 
-Timer::Timer(std::weak_ptr<IOHandle> assoc_hdl, int timeout_ms)
-    : IOHandle(EPOLLIN), m_assoc_hdl(assoc_hdl), m_timeout_ms(timeout_ms) {
+Timer::Timer(TimeoutCallback cb, int timeout_ms)
+    : IOHandle(EPOLLIN), m_timeout_cb(cb), m_timeout_ms(timeout_ms) {
     int fd = timerfd_create(CLOCK_MONOTONIC, 0);
 
     if (fd < 0) {
-        m_fd_result = Result<int>::Err(Error("failed to create timer fd"));
+        m_fd_result =
+            Result<int>::Err(Error::from_errno(__func__, "timerfd_create"));
+        return;
+    }
+
+    Result<> nb_res = util::nix::set_fd_nonblock(fd);
+    if (!nb_res.is_ok()) {
+        ::close(fd);
+        m_fd_result = Result<int>::Err(Error(__func__, nb_res));
         return;
     }
 
@@ -21,7 +31,8 @@ Timer::Timer(std::weak_ptr<IOHandle> assoc_hdl, int timeout_ms)
     timeout.it_value.tv_nsec = m_timeout_ms % 1000;
 
     if (timerfd_settime(fd, 0, &timeout, nullptr) == -1) {
-        m_fd_result = Result<int>::Err(Error("failed to set time on fd"));
+        m_fd_result =
+            Result<int>::Err(Error::from_errno(__func__, "timerfd_settime"));
         return;
     }
 
@@ -33,17 +44,11 @@ Timer::~Timer() {}
 
 bool Timer::on_data(const std::shared_ptr<EventLoop>& event_loop_ptr,
                     const std::weak_ptr<Timer>&, int fd, uint32_t events) {
-    std::shared_ptr<IOHandle> hdl;
-    if (!(hdl = m_assoc_hdl.lock())) {
+    if (!m_timeout_cb) {
         return false;
     }
 
-    Result<int> epfd_res = event_loop_ptr->m_epfd->get();
-    if (!epfd_res.is_ok()) {
-        return false;
-    }
-
-    event_loop_ptr->epoll_del(epfd_res.unwrap(), hdl);
+    m_timeout_cb(event_loop_ptr);
 
     return false;
 }

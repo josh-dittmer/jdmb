@@ -20,8 +20,7 @@ int start(int argc, char* argv[]) {
     Result<Config::Values> config_res = config.load();
 
     if (!config_res.is_ok()) {
-        main_logger.fatal("Failed to load config: " +
-                          config_res.unwrap_err().get_msg());
+        main_logger.fatal("Failed to load config: " + config_res.unwrap_err());
         main_logger.fatal("JDMB exited with non-zero status code");
         return -1;
     }

@@ -40,6 +40,9 @@ _HEADERS += log/logger.h
 _OBJECTS += net/tcp/client.o
 _HEADERS += net/tcp/client.h
 
+_OBJECTS += net/tcp/connection.o
+_HEADERS += net/tcp/connection.h
+
 _OBJECTS += net/tcp/server.o
 _HEADERS += net/tcp/server.h
 
@@ -48,6 +51,9 @@ _HEADERS += util/result.h
 
 _OBJECTS += util/str.o
 _HEADERS += util/str.h
+
+_OBJECTS += util/unix.o
+_HEADERS += util/unix.h
 
 # root
 _OBJECTS += config.o

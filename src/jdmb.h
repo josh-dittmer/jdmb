@@ -4,6 +4,7 @@
 #include "log/logger.h"
 #include "log/logger_context.h"
 #include "net/tcp/client.h"
+#include "net/tcp/server.h"
 
 #include <string>
 
@@ -21,7 +22,10 @@ class JDMB {
     void stop();
 
   private:
-    void discovery_node_connect(tcp::Client tcp_client, int timeout);
+    void configure_test_client(tcp::Client& tcp_client);
+    void discovery_node_connect(const tcp::Client& tcp_client, int timeout);
+
+    void configure_test_server(tcp::Server& tcp_server);
 
     Config::Values m_config_values;
 

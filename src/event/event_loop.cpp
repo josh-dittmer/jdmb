@@ -3,14 +3,13 @@
 #include "fd/epoll_fd.h"
 #include "timer.h"
 
-#include <string.h>
 #include <sys/epoll.h>
 #include <unistd.h>
 
 Result<> EventLoop::start() {
     Result<int> epfd_res = m_epfd->get();
     if (!epfd_res.is_ok()) {
-        return Result<>::Err(Error("epoll fd error: "));
+        return Result<>::Err(Error(__func__, epfd_res));
     }
 
     int epfd = epfd_res.unwrap();
@@ -51,19 +50,22 @@ Result<> EventLoop::add(const std::shared_ptr<IOHandle>& io_hdl,
                         int timeout_ms) {
     Result<int> epfd_res = m_epfd->get();
     if (!epfd_res.is_ok()) {
-        return Result<>::Err(
-            Error("epoll fd error: " + epfd_res.unwrap_err().get_msg()));
+        return Result<>::Err(Error(__func__, epfd_res));
     }
 
     int epfd = epfd_res.unwrap();
 
     std::shared_ptr<Timer> timer_hdl = nullptr;
     if (timeout_ms > 0) {
-        timer_hdl = std::make_shared<Timer>(io_hdl, timeout_ms);
+        timer_hdl = std::make_shared<Timer>(
+            [=](std::shared_ptr<EventLoop> event_loop) {
+                event_loop->epoll_del(epfd, io_hdl);
+            },
+            timeout_ms);
 
         Result<> timer_res = add(timer_hdl, -1);
         if (!timer_res.is_ok()) {
-            m_logger.warn("Failed to set timeout on IO event, ignoring");
+            m_logger.warn("Set timeout failed: " + timer_res.unwrap_err());
         }
     }
 
@@ -74,7 +76,7 @@ Result<> EventLoop::epoll_add(int epfd, const std::shared_ptr<IOHandle>& hdl,
                               const std::shared_ptr<Timer>& timer_hdl) {
     Result<int> hdl_res = hdl->get();
     if (!hdl_res.is_ok()) {
-        return Result<>::Err(Error("handle not open"));
+        return Result<>::Err(Error(__func__, hdl_res));
     }
 
     int fd = hdl_res.unwrap();
@@ -84,8 +86,7 @@ Result<> EventLoop::epoll_add(int epfd, const std::shared_ptr<IOHandle>& hdl,
     ev.data.fd = fd;
 
     if (epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &ev) == -1) {
-        return Result<>::Err(
-            Error("epoll_ctl error: " + std::string(strerror(errno))));
+        return Result<>::Err(Error::from_errno(__func__, "epoll_ctl"));
     }
 
     m_logger.verbose("epoll_ctl_add(): +[" + std::to_string(fd) + "]");
@@ -99,14 +100,14 @@ Result<> EventLoop::epoll_add(int epfd, const std::shared_ptr<IOHandle>& hdl,
 Result<> EventLoop::epoll_del(int epfd, const std::shared_ptr<IOHandle>& hdl) {
     Result<int> hdl_res = hdl->get();
     if (!hdl_res.is_ok()) {
-        return Result<>::Err(Error("handle not open"));
+        return Result<>::Err(Error(__func__, hdl_res));
     }
 
     int fd = hdl_res.unwrap();
 
     auto mit = m_hdls.find(fd);
     if (mit == m_hdls.end()) {
-        return Result<>::Err(Error("handle not found"));
+        return Result<>::Err(Error(__func__, "handle not found"));
     }
 
     return epoll_del(epfd, mit);
@@ -118,8 +119,7 @@ EventLoop::epoll_del(int epfd,
     int fd = mit->first;
 
     if (epoll_ctl(epfd, EPOLL_CTL_DEL, fd, nullptr) == -1) {
-        return Result<>::Err(
-            Error("epoll_ctl error: " + std::string(strerror(errno))));
+        return Result<>::Err(Error::from_errno(__func__, "epoll_ctl"));
     }
 
     m_hdls.erase(mit);

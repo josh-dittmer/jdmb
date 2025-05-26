@@ -1,20 +1,14 @@
 #pragma once
 
+#include <cstring>
+#include <iostream>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <variant>
+#include <vector>
 
-class Error {
-  public:
-    Error(const std::string& msg) : m_msg(msg) {}
-    ~Error() {}
-
-    std::string get_msg() { return m_msg; }
-
-  private:
-    std::string m_msg;
-};
-
+class Error;
 typedef std::monostate None;
 
 template <typename T = None, typename E = Error> class Result {
@@ -58,3 +52,63 @@ template <typename T = None, typename E = Error> class Result {
 
     bool m_checked;
 };
+
+class Error {
+  public:
+    Error(const std::string& src_func, const Error& prev)
+        : m_src_func(src_func), m_backtrace(prev.m_backtrace),
+          m_msg(prev.m_msg) {
+        m_backtrace.push_back(prev.m_src_func);
+    }
+
+    template <typename T, typename E>
+    Error(const std::string& src_func, Result<T, E>& prev)
+        : Error(std::string(src_func), prev.unwrap_err()) {}
+
+    Error(const std::string& src_func, const std::string& msg)
+        : m_src_func(src_func), m_msg(msg) {}
+
+    static Error from_errno(const std::string& parent_func,
+                            const std::string& setter_func) {
+        Error setter_err = Error(setter_func, strerror(errno));
+        return Error(parent_func, setter_err);
+    }
+
+    ~Error() {}
+
+    std::string str() const {
+        std::string str = "\n\t[START CALLSTACK]";
+        str += "\n\t\t" + m_src_func;
+
+        int i = m_backtrace.size() - 1;
+        for (; i >= 1; i--) {
+            str += "\n\t\t\342\224\234 " + m_backtrace[i];
+        }
+
+        if (m_backtrace.size() > 0)
+            str += "\n\t\t\342\224\224 " + m_backtrace[0];
+
+        str += " -> [" + m_msg + "]";
+        str += "\n\t[END CALLSTACK]";
+
+        return str;
+    }
+
+    /*std::string get_src_func() { return m_src_func; }
+    std::vector<std::string> get_backtrace() { return m_backtrace; }
+    std::string get_msg() { return m_msg; }*/
+
+  private:
+    std::string m_src_func;
+    std::vector<std::string> m_backtrace;
+
+    std::string m_msg;
+};
+
+inline std::string operator+(const std::string& lhs, Error rhs) {
+    return lhs + rhs.str();
+}
+
+inline std::string operator+(const char* lhs, Error rhs) {
+    return std::string(lhs) + rhs.str();
+}
