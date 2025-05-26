@@ -10,13 +10,13 @@ bool JDMB::start() {
 
     m_event_loop = EventLoop::create(m_logger_context);
 
-    /*tcp::Client tcp_client1 = tcp::Client(m_logger_context, "localhost",
-    3000); configure_test_client(tcp_client1);
+    tcp::Client tcp_client1 = tcp::Client(m_logger_context, "localhost", 3000);
+    configure_test_client(tcp_client1);
 
     discovery_node_connect(tcp_client1, 5000);
 
-    tcp::Client tcp_client2 = tcp::Client(m_logger_context, "localhost", 3000);
-    configure_test_client(tcp_client2);
+    /*tcp::Client tcp_client2 = tcp::Client(m_logger_context, "localhost",
+    3000); configure_test_client(tcp_client2);
 
     discovery_node_connect(tcp_client2, 5000);*/
 
@@ -54,11 +54,11 @@ void JDMB::configure_test_client(tcp::Client& tcp_client) {
             m_logger.log("Connection to discovery node [" +
                          conn->get_addr_str() + "] closed!");
 
-            discovery_node_connect(tcp_client, 5000);
+            // discovery_node_connect(tcp_client, 5000);
         });
 
         //
-        const int test_buf_size = 65536;
+        /*const int test_buf_size = 65536;
 
         std::vector<uint8_t> test_buf;
         test_buf.reserve(test_buf_size);
@@ -69,7 +69,7 @@ void JDMB::configure_test_client(tcp::Client& tcp_client) {
 
         for (int i = 0; i < 1000; i++) {
             conn->send(test_buf);
-        }
+        }*/
         //
     });
 

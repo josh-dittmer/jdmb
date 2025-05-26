@@ -16,7 +16,7 @@ Result<int> Connection::send(const std::vector<uint8_t>& data) {
 
     if (!m_send_ready) {
         m_send_queue.emplace(data);
-        m_logger.verbose("send(): buffer full: queued " +
+        m_logger.verbose("[" + m_addr_str + "]: buffer full: queued " +
                          std::to_string(data.size()) + " bytes");
         return Result<int>::Ok(0);
     }
@@ -36,7 +36,7 @@ Result<int> Connection::send(const std::vector<uint8_t>& data) {
                     m_send_queue.emplace(partial_data);
 
                     m_logger.verbose(
-                        "send(): buffer full: sent " +
+                        "[" + m_addr_str + "]: buffer full: sent " +
                         std::to_string(total_sent) + "/" +
                         std::to_string(data.size()) + " bytes, queued " +
                         std::to_string(partial_data.size()) + " bytes");
@@ -47,13 +47,15 @@ Result<int> Connection::send(const std::vector<uint8_t>& data) {
                 break;
             }
 
-            m_logger.debug("send(): error: " + std::string(strerror(errno)));
+            m_logger.debug("[" + m_addr_str +
+                           "]: error: " + std::string(strerror(errno)));
             return Result<int>::Err(Error::from_errno(__func__, "send"));
         }
 
         total_sent += bytes_sent;
 
-        m_logger.verbose("send(): sent " + std::to_string(total_sent) + "/" +
+        m_logger.verbose("[" + m_addr_str + "]: sent " +
+                         std::to_string(total_sent) + "/" +
                          std::to_string(data.size()) + " bytes");
     }
 
@@ -87,8 +89,8 @@ Result<std::vector<uint8_t>> Connection::recv(int fd) {
         }
     }
 
-    m_logger.verbose("recv(): received " + std::to_string(buf.size()) +
-                     " bytes");
+    m_logger.verbose("[" + m_addr_str + "]: received " +
+                     std::to_string(buf.size()) + " bytes");
     return Result<std::vector<uint8_t>>::Ok(buf);
 }
 
@@ -110,7 +112,7 @@ Result<int> Connection::flush_send_queue() {
             data.erase(data.begin(), data.begin() + total_sent);
             m_send_queue.front() = data;
 
-            m_logger.verbose("flush_send_queue(): buffer full: sent " +
+            m_logger.verbose("[" + m_addr_str + "]: buffer full, sent " +
                              std::to_string(total_sent) + " bytes, requeued " +
                              std::to_string(data.size()) + " bytes and " +
                              std::to_string(m_send_queue.size() - 1) +
@@ -124,6 +126,8 @@ Result<int> Connection::flush_send_queue() {
     }
 
     m_flushing = false;
+
+    m_logger.verbose("[" + m_addr_str + "]: flushed send queue");
 
     return Result<int>::Ok(0);
 }

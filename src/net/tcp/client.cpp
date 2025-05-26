@@ -61,16 +61,6 @@ Client::Connection::Connection(Client::Connection::Private,
         return;
     }
 
-    /*/ testing //
-    // Reduce send buffer size
-    int sndbuf = 4096;
-    setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &sndbuf, sizeof(sndbuf));
-
-    // Disable Nagle
-    int flag = 1;
-    setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag));
-    // */
-
     if (connect(fd, m_curr_addr->ai_addr, m_curr_addr->ai_addrlen) != 0 &&
         errno != EINPROGRESS) {
         ::close(fd);
@@ -100,7 +90,7 @@ bool Client::Connection::is_connected(
 
     if (events & EPOLLOUT) {
         Result<bool> res = connect_next(event_loop_ptr, timer_hdl, fd);
-        return res.is_ok() ? !res.unwrap() : true;
+        return res.is_ok() ? res.unwrap() : false;
     }
 
     return true;

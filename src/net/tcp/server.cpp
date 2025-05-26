@@ -30,7 +30,7 @@ Server::Server(Private, std::shared_ptr<LoggerContext> logger_context, int port,
 
     sockaddr_in server_addr = {};
     server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(port);
+    server_addr.sin_port = htons(m_port);
     server_addr.sin_addr.s_addr = INADDR_ANY;
 
     if (bind(fd, (sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
@@ -44,6 +44,8 @@ Server::Server(Private, std::shared_ptr<LoggerContext> logger_context, int port,
         m_fd_result = Result<int>::Err(Error::from_errno(__func__, "listen"));
         return;
     }
+
+    m_logger.verbose("listening on port " + std::to_string(m_port));
 
     _OPEN_COUNT++;
     m_fd_result = Result<int>::Ok(fd);
