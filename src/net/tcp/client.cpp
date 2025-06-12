@@ -37,7 +37,7 @@ Client::Connection::Connection(Client::Connection::Private,
                                addrinfo* addrs, addrinfo* curr_addr,
                                ConnectCallback connect_cb, FailCallback fail_cb)
     : tcp::Connection(EPOLLET | EPOLLIN | EPOLLOUT, logger_context,
-                      "TCPClientConn"),
+                      "CTCPConnection"),
       m_connected(false), m_addrs(addrs), m_curr_addr(curr_addr),
       m_connect_cb(connect_cb), m_fail_cb(fail_cb) {
 
@@ -68,7 +68,15 @@ Client::Connection::Connection(Client::Connection::Private,
         return;
     }
 
-    m_addr_str = util::str::addr_to_str(curr_addr);
+    m_addr_str = "???";
+
+    Result<std::string> addr_res = util::str::addr_to_str(curr_addr);
+    if (!addr_res.is_ok()) {
+        m_logger.warn("Failed to convert address to string: " +
+                      addr_res.unwrap_err());
+    } else {
+        m_addr_str = addr_res.unwrap();
+    }
 
     _OPEN_COUNT++;
     m_fd_result = Result<int>::Ok(fd);
@@ -95,6 +103,8 @@ bool Client::Connection::is_connected(
 
     return true;
 }
+
+void Client::Connection::on_disconnect() {}
 
 Result<bool> Client::Connection::connect_next(
     const std::shared_ptr<EventLoop>& event_loop_ptr,

@@ -1,11 +1,45 @@
 #include "jdmb.h"
 
-#include "event/event_loop.h"
+#include "node/server.h"
 #include "util/str.h"
 
 #include <thread>
 
-bool JDMB::start() {
+const int JDMB::NodePort = 4484;
+
+bool JDMB::start(bool init_cluster, const std::string& discover_host) {
+    m_logger.log("Starting JDMB v1.0 by Josh Dittmer");
+
+    m_event_loop = EventLoop::create(m_logger_context);
+
+    if (init_cluster) {
+        if (!perform_discovery(discover_host)) {
+            return false;
+        }
+    }
+
+    Result<std::shared_ptr<node::Server>> ns_res = node::Server::create(
+        m_event_loop, m_logger_context, m_config_values.get_node_host(),
+        NodePort, m_config_values.get_node_queue_len());
+
+    if (!ns_res.is_ok()) {
+        m_logger.error("Failed to start inter-node comms: " +
+                       ns_res.unwrap_err());
+        return false;
+    }
+
+    Result<> evl_res = m_event_loop->start();
+    if (!evl_res.is_ok()) {
+        m_logger.error("Failed to start event loop: " + evl_res.unwrap_err());
+        return false;
+    }
+
+    return true;
+}
+
+bool JDMB::perform_discovery(const std::string& discover_host) { return true; }
+
+/*bool JDMB::start(bool init_cluster, const std::string& node_host) {
     m_logger.log("Starting JDMB v1.0 by Josh Dittmer");
 
     m_event_loop = EventLoop::create(m_logger_context);
@@ -15,16 +49,19 @@ bool JDMB::start() {
 
     discovery_node_connect(tcp_client1, 5000);
 
-    /*tcp::Client tcp_client2 = tcp::Client(m_logger_context, "localhost",
-    3000); configure_test_client(tcp_client2);
+    tcp::Client tcp_client2 = tcp::Client(m_logger_context, "localhost", 3000);
+    configure_test_client(tcp_client2);
 
-    discovery_node_connect(tcp_client2, 5000);*/
+    discovery_node_connect(tcp_client2, 5000);
 
     std::shared_ptr<tcp::Server> tcp_server =
-        tcp::Server::create(m_logger_context, 4444, 128);
+        tcp::Server::create(m_logger_context, node_host, NodePort, 128);
     configure_test_server(*tcp_server);
 
-    m_event_loop->add(tcp_server);
+    Result<> server_add_res = m_event_loop->add(tcp_server);
+    if (!server_add_res.is_ok()) {
+        m_logger.error("TCP server error: " + server_add_res.unwrap_err());
+    }
 
     Result<> res = m_event_loop->start();
     if (!res.is_ok()) {
@@ -33,11 +70,11 @@ bool JDMB::start() {
     }
 
     return true;
-}
+}*/
 
 void JDMB::stop() {}
 
-void JDMB::configure_test_client(tcp::Client& tcp_client) {
+/*void JDMB::configure_test_client(tcp::Client& tcp_client) {
     tcp_client.on_connect([&](std::shared_ptr<tcp::Connection> conn) {
         m_logger.log("Connection to discovery node [" + conn->get_addr_str() +
                      "] successful!");
@@ -69,7 +106,7 @@ void JDMB::configure_test_client(tcp::Client& tcp_client) {
 
         for (int i = 0; i < 1000; i++) {
             conn->send(test_buf);
-        }*/
+        }
         //
     });
 
@@ -81,7 +118,7 @@ void JDMB::configure_test_client(tcp::Client& tcp_client) {
 
         std::this_thread::sleep_for(std::chrono::milliseconds(5000));
 
-        discovery_node_connect(tcp_client, 5000);*/
+        discovery_node_connect(tcp_client, 5000);
     });
 }
 
@@ -132,4 +169,4 @@ void JDMB::configure_test_server(tcp::Server& tcp_server) {
         }
         //
     });
-}
+}*/

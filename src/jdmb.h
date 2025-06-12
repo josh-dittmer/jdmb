@@ -1,10 +1,9 @@
 #pragma once
 
 #include "config.h"
+#include "event/event_loop.h"
 #include "log/logger.h"
 #include "log/logger_context.h"
-#include "net/tcp/client.h"
-#include "net/tcp/server.h"
 
 #include <string>
 
@@ -18,14 +17,19 @@ class JDMB {
 
     ~JDMB() {}
 
-    bool start();
+    bool start(bool init_cluster, const std::string& discover_host);
     void stop();
 
+    static const int NodePort;
+
   private:
-    void configure_test_client(tcp::Client& tcp_client);
+    // bool configure_node_server(const std::string& node_host);
+    bool perform_discovery(const std::string& discover_host);
+
+    /*void configure_test_client(tcp::Client& tcp_client);
     void discovery_node_connect(const tcp::Client& tcp_client, int timeout);
 
-    void configure_test_server(tcp::Server& tcp_server);
+    void configure_test_server(tcp::Server& tcp_server);*/
 
     Config::Values m_config_values;
 

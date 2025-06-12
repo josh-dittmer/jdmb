@@ -13,18 +13,28 @@ class Config {
         Values() {}
         ~Values() {}
 
-        int get_port() const { return m_port; }
-        bool is_discovery_node() { return m_discovery_node; }
         LoggerType get_log_level() { return m_log_level; }
+
+        std::string get_jdmb_host() { return m_jdmb_host; }
+        int get_jdmb_port() { return m_jdmb_port; }
+        int get_jdmb_queue_len() { return m_jdmb_queue_len; }
+
+        std::string get_node_host() { return m_node_host; }
+        int get_node_queue_len() { return m_node_queue_len; }
 
         std::string to_str();
 
         friend class Config;
 
       private:
-        int m_port;
-        bool m_discovery_node;
         LoggerType m_log_level;
+
+        std::string m_jdmb_host;
+        int m_jdmb_port;
+        int m_jdmb_queue_len;
+
+        std::string m_node_host;
+        int m_node_queue_len;
     };
 
     Config(const std::string& path) : m_path(path) {}

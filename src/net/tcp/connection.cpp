@@ -62,16 +62,23 @@ Result<int> Connection::send(const std::vector<uint8_t>& data) {
     return Result<int>::Ok(total_sent);
 }
 
-Result<std::vector<uint8_t>> Connection::recv(int fd) {
+Result<bool> Connection::recv(int fd, std::vector<uint8_t>& buf, int max) {
+    buf.clear();
     static const int CHUNK_SIZE = 4096;
 
-    std::vector<uint8_t> buf;
     uint8_t chunk[CHUNK_SIZE];
+    bool again = false;
 
     while (true) {
-        int bytes_received = ::recv(fd, chunk, CHUNK_SIZE, 0);
+        int size = buf.size() > max ? max - buf.size() : 4096;
+
+        int bytes_received = ::recv(fd, chunk, size, 0);
         if (bytes_received > 0) {
             buf.insert(buf.end(), chunk, chunk + bytes_received);
+            if (buf.size() >= max) {
+                again = true;
+                break;
+            }
         }
 
         else if (bytes_received == -1) {
@@ -79,19 +86,17 @@ Result<std::vector<uint8_t>> Connection::recv(int fd) {
                 break;
             }
 
-            return Result<std::vector<uint8_t>>::Err(
-                Error::from_errno(__func__, "recv"));
+            return Result<bool>::Err(Error::from_errno(__func__, "recv"));
         }
 
         else {
-            return Result<std::vector<uint8_t>>::Err(
-                Error(__func__, "connection closed"));
+            return Result<bool>::Err(Error(__func__, "connection closed"));
         }
     }
 
     m_logger.verbose("[" + m_addr_str + "]: received " +
                      std::to_string(buf.size()) + " bytes");
-    return Result<std::vector<uint8_t>>::Ok(buf);
+    return Result<bool>::Ok(again);
 }
 
 Result<int> Connection::flush_send_queue() {
@@ -158,16 +163,25 @@ bool Connection::on_data(const std::shared_ptr<EventLoop>& event_loop_ptr,
     }
 
     if (!should_close && (events & EPOLLIN)) {
-        Result<std::vector<uint8_t>> res = recv(fd);
-        if (!res.is_ok()) {
-            m_logger.debug("[" + m_addr_str +
-                           "]: recv failed: " + res.unwrap_err());
+        std::vector<uint8_t> buf;
+        bool again = true;
 
-            should_close = true;
-        }
+        while (again) {
+            // process 100mb at a time
+            Result<bool> res = recv(fd, buf, 104857600);
+            if (!res.is_ok()) {
+                m_logger.debug("[" + m_addr_str +
+                               "]: recv failed: " + res.unwrap_err());
 
-        else if (m_message_cb) {
-            m_message_cb(get_ptr(), res.unwrap());
+                should_close = true;
+                break;
+            }
+
+            again = res.unwrap();
+
+            if (m_message_cb) {
+                m_message_cb(get_ptr(), buf);
+            }
         }
     }
 
@@ -180,6 +194,7 @@ bool Connection::on_data(const std::shared_ptr<EventLoop>& event_loop_ptr,
 
     if (should_close && m_disconnect_cb) {
         m_disconnect_cb(get_ptr());
+        on_disconnect();
     }
 
     return !should_close;

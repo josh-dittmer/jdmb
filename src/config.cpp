@@ -27,16 +27,6 @@ Result<Config::Values> Config::load() {
         return Result<Values>::Err(Error(__func__, err_str));
     }
 
-    Result<int> port_res = read_int(doc, "port");
-    if (!port_res.is_ok()) {
-        return Result<Values>::Err(Error(__func__, port_res));
-    }
-
-    Result<bool> discovery_node_res = read_bool(doc, "discovery_node");
-    if (!discovery_node_res.is_ok()) {
-        return Result<Values>::Err(Error(__func__, discovery_node_res));
-    }
-
     Result<std::string> log_level_res = read_str(doc, "log_level");
     if (!log_level_res.is_ok()) {
         return Result<Values>::Err(Error(__func__, log_level_res));
@@ -55,10 +45,38 @@ Result<Config::Values> Config::load() {
 
     LoggerType log_level = mit->second;
 
+    Result<std::string> jdmb_host_res = read_str(doc, "jdmb_host");
+    if (!jdmb_host_res.is_ok()) {
+        return Result<Values>::Err(Error(__func__, jdmb_host_res));
+    }
+
+    Result<int> jdmb_port_res = read_int(doc, "jdmb_port");
+    if (!jdmb_port_res.is_ok()) {
+        return Result<Values>::Err(Error(__func__, jdmb_port_res));
+    }
+
+    Result<int> jdmb_queue_len_res = read_int(doc, "jdmb_queue_len");
+    if (!jdmb_queue_len_res.is_ok()) {
+        return Result<Values>::Err(Error(__func__, jdmb_queue_len_res));
+    }
+
+    Result<std::string> node_host_res = read_str(doc, "node_host");
+    if (!node_host_res.is_ok()) {
+        return Result<Values>::Err(Error(__func__, node_host_res));
+    }
+
+    Result<int> node_queue_len_res = read_int(doc, "node_queue_len");
+    if (!node_queue_len_res.is_ok()) {
+        return Result<Values>::Err(Error(__func__, node_queue_len_res));
+    }
+
     Values values;
-    values.m_port = port_res.unwrap();
-    values.m_discovery_node = discovery_node_res.unwrap();
     values.m_log_level = log_level;
+    values.m_jdmb_host = jdmb_host_res.unwrap();
+    values.m_jdmb_port = jdmb_port_res.unwrap();
+    values.m_jdmb_queue_len = jdmb_queue_len_res.unwrap();
+    values.m_node_host = node_host_res.unwrap();
+    values.m_node_queue_len = node_queue_len_res.unwrap();
 
     return Result<Values>::Ok(values);
 }

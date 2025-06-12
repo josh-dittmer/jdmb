@@ -8,6 +8,8 @@
 #include <variant>
 #include <vector>
 
+#include <netdb.h>
+
 class Error;
 typedef std::monostate None;
 
@@ -72,6 +74,12 @@ class Error {
                             const std::string& setter_func) {
         Error setter_err = Error(setter_func, strerror(errno));
         return Error(parent_func, setter_err);
+    }
+
+    static Error from_ai_err(const std::string& parent_func,
+                             const std::string& producer_func, int err) {
+        Error producer_err = Error(producer_func, gai_strerror(err));
+        return Error(parent_func, producer_err);
     }
 
     ~Error() {}

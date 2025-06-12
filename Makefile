@@ -46,7 +46,18 @@ _HEADERS += net/tcp/connection.h
 _OBJECTS += net/tcp/server.o
 _HEADERS += net/tcp/server.h
 
+# node/packet
+_OBJECTS += node/packet/header.o
+_HEADERS += node/packet/header.h
+
+# node
+_OBJECTS += node/server.o
+_HEADERS += node/server.h
+
 # util
+_OBJECTS += util/debug.o
+_HEADERS += util/debug.h
+
 _HEADERS += util/result.h
 
 _OBJECTS += util/str.o

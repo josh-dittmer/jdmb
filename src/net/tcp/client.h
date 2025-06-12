@@ -44,6 +44,8 @@ class Client {
                           const std::weak_ptr<Timer>& timer_hdl, int fd,
                           uint32_t events) override;
 
+        void on_disconnect() override;
+
         Result<bool>
         connect_next(const std::shared_ptr<EventLoop>& event_loop_ptr,
                      const std::weak_ptr<Timer>& timer_hdl, int fd);

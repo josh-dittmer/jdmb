@@ -51,7 +51,9 @@ class Connection : public IOHandle,
                               const std::weak_ptr<Timer>& timer_hdl, int fd,
                               uint32_t events) = 0;
 
-    Result<std::vector<uint8_t>> recv(int fd);
+    virtual void on_disconnect() = 0;
+
+    Result<bool> recv(int fd, std::vector<uint8_t>& buf, int max);
     Result<int> flush_send_queue();
 
     bool m_send_ready;
