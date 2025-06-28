@@ -71,21 +71,23 @@ template <typename... ReaderTs> class Sequence {
     template <typename C, typename N, typename... Rest>
     struct ReaderCallbackTupleBuilder<C, N, Rest...> {
         using type = decltype(std::tuple_cat(
-            std::tuple<std::function<std::shared_ptr<N>(
-                const detail::ReaderDataT<C>&)>>{},
+            std::tuple<
+                std::function<std::shared_ptr<N>(const std::shared_ptr<C>&)>>{},
             typename ReaderCallbackTupleBuilder<N, Rest...>::type{}));
     };
 
     template <typename L> struct ReaderCallbackTupleBuilder<L> {
-        using type =
-            std::tuple<std::function<void(const detail::ReaderDataT<L>&)>>;
+        using type = std::tuple<std::function<void(const std::shared_ptr<C>&)>>;
     };
     using ReaderCallbackTuple =
         typename ReaderCallbackTupleBuilder<ReaderTs...>::type;
 
     using ReaderTuple = std::tuple<ReaderAndState<ReaderTs>...>;
 
-    template <typename... Args> Sequence(Args... args) {
+    using ErrorCallback = std::function<void(
+        const Error& err, const std::shared_ptr<Reader> reader)>;
+
+    template <typename... Args> Sequence(Args... args) : m_curr_offset(0) {
         std::get<0>(m_readers).m_enabled = true;
         std::get<0>(m_readers).m_reader = std::make_shared<
             typename decltype(std::get<0>(m_readers).m_reader)::element_type>(
@@ -103,6 +105,8 @@ template <typename... ReaderTs> class Sequence {
         std::get<I>(m_reader_cbs) = cb;
     }
 
+    inline void on_error(ErrorCallback cb) { m_error_cb = cb; }
+
   private:
     template <std::size_t... Is>
     inline void perform_reads(std::index_sequence<Is...>,
@@ -110,20 +114,29 @@ template <typename... ReaderTs> class Sequence {
         (perform_read<Is>(data), ...);
     }
 
-    template <std::size_t I>
+    template <std::size_t I, std::enable_if_t<(I < ReaderCount), int> = 0>
     inline void perform_read(const std::vector<uint8_t>& data) {
-        if (std::get<I>(m_readers).m_reader) {
+        std::shared_ptr reader = std::get<I>(m_readers).m_reader;
+        if (reader) {
+            if (m_curr_offset >= data.size()) {
+                m_curr_offset = 0;
+                return;
+            }
 
-            std::cout << std::get<I>(m_readers).m_reader->get_name()
-                      << std::endl;
+            m_curr_offset = reader->read(data, m_curr_offset);
+            if (reader->is_ready()) {
+                std::get<I>(m_readers) = nullptr;
+                std::get<I + 1>(m_readers).m_reader =
+                    std::get<I>(m_reader_cbs)(reader);
+            }
         }
     }
 
-    template <std::size_t I>
-    inline void perform_read<ReaderCount>(const std::vector<uint8_t>& data) {
+    template <std::size_t I, std::enable_if_t<(I == ReaderCount), int> = 0>
+    inline void perform_read(const std::vector<uint8_t>& data) {
         if (std::get<I>(m_readers).m_reader) {
 
-            std::cout << std::get<I>(m_readers).m_reader->get_name()
+            std::cout << "last " << std::get<I>(m_readers).m_reader->get_name()
                       << std::endl;
         }
     }
@@ -133,6 +146,10 @@ template <typename... ReaderTs> class Sequence {
     typename ReaderT> void create_reader();*/
 
     ReaderCallbackTuple m_reader_cbs;
+    ErrorCallback m_error_cb;
+
     ReaderTuple m_readers;
+
+    std::size_t m_curr_offset;
 };
 } // namespace stream
