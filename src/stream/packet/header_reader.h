@@ -11,10 +11,11 @@ struct Header {
 
 class HeaderReader : public Reader<Header, sizeof(Header)> {
   public:
-    HeaderReader() {}
+    HeaderReader() : Reader("Header") {}
     ~HeaderReader() {}
 
-    Result<Header> consume() override;
+    Result<Header> consume() const override;
+    bool should_stop_reading() const override { return false; }
 };
 
 } // namespace packet

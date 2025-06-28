@@ -2,6 +2,7 @@
 
 #include "../event/event_loop.h"
 #include "../net/tcp/server.h"
+#include "../stream/packet/packet_sequence.h"
 
 #include <map>
 #include <string>
@@ -21,8 +22,7 @@ class Server {
 
       public:
         Connection(Private, std::shared_ptr<LoggerContext> logger_context)
-            : m_logger(logger_context->use("NodeConnection")),
-              m_bytes_needed(0) {}
+            : m_logger(logger_context->use("NodeConnection")) {}
         ~Connection() {}
 
         static std::shared_ptr<Connection>
@@ -38,8 +38,7 @@ class Server {
       private:
         Logger m_logger;
 
-        std::size_t m_bytes_needed;
-        std::vector<uint8_t> m_curr_packet;
+        stream::packet::PacketSequence m_packet_seq;
     };
 
     Server(Private, std::shared_ptr<LoggerContext> logger_context,

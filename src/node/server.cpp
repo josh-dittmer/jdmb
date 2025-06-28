@@ -7,37 +7,26 @@ namespace node {
 
 void Server::Connection::on_connect(std::shared_ptr<tcp::Connection> tcp_conn) {
     m_logger.log("[" + tcp_conn->get_addr_str() + "]: connected");
-    m_bytes_needed = 4;
+
+    m_packet_seq.on_ready<0>(
+        [&](const stream::packet::Header& header)
+            -> std::shared_ptr<stream::packet::DataReader> {
+            return std::make_shared<stream::packet::DataReader>(
+                header.m_packet_len);
+        });
+    m_packet_seq.on_ready<1>([&](const stream::packet::Data& data) -> void {
+        std::cout << "Data size: " << data.m_data.size() << std::endl;
+    });
+
+    m_packet_seq.read({});
+
+    std::tuple_element_t<0, stream::packet::PacketSequence::ReaderTuple> t;
 }
 
 bool Server::Connection::on_message(std::shared_ptr<tcp::Connection> tcp_conn,
                                     const std::vector<uint8_t>& data) {
-    while (true) {
-        if (m_bytes_needed <= 4) {
-        }
-    }
-    if (m_curr_packet.empty()) {
-        if (data.size() < 4) {
-            m_logger.debug("[" + tcp_conn->get_addr_str() +
-                           "]: invalid length header");
-            return false;
-        }
-
-        m_expected_packet_len =
-            (data[0]) | (data[1] << 8) | (data[2] << 16) | (data[3] << 24);
-
-        m_curr_packet.insert(m_curr_packet.end(), data.begin() + 4, data.end());
-    } else {
-        m_curr_packet.insert(m_curr_packet.end(), data.begin(), data.end());
-    }
-
-    if (data.size() >= m_expected_packet_len) {
-    }
-
-    m_logger.log("[" + tcp_conn->get_addr_str() + "]: total " +
-                 std::to_string(m_curr_packet.size()) + " bytes (" +
-                 std::to_string(m_expected_packet_len) +
-                 " needed for current packet)");
+    m_logger.log("[" + tcp_conn->get_addr_str() + "]: received " +
+                 std::to_string(data.size()) + " bytes");
     return true;
 }
 

@@ -2,7 +2,7 @@ SRCDIR = src
 STRUCTURE = $(shell cd $(SRCDIR) && find . -type d)
 
 CXX ?= g++
-CXXFLAGS ?= -g
+CXXFLAGS ?= -g -std=c++17
 
 BINARYDIR = bin
 OBJECTDIR = $(BINARYDIR)/obj
@@ -46,13 +46,29 @@ _HEADERS += net/tcp/connection.h
 _OBJECTS += net/tcp/server.o
 _HEADERS += net/tcp/server.h
 
-# node/packet
-_OBJECTS += node/packet/header.o
-_HEADERS += node/packet/header.h
-
 # node
 _OBJECTS += node/server.o
 _HEADERS += node/server.h
+
+# stream/packet
+_OBJECTS += stream/packet/data_reader.o
+_HEADERS += stream/packet/data_reader.h
+
+_OBJECTS += stream/packet/header_reader.o
+_HEADERS += stream/packet/header_reader.h
+
+# stream
+_OBJECTS += stream/packet/data_reader.o
+_HEADERS += stream/packet/data_reader.h
+
+_OBJECTS += stream/packet/header_reader.o
+_HEADERS += stream/packet/header_reader.h
+
+_OBJECTS += stream/reader.o
+_HEADERS += stream/reader.h
+
+_OBJECTS += stream/sequence.o
+_HEADERS += stream/sequence.h
 
 # util
 _OBJECTS += util/debug.o
