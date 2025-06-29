@@ -87,6 +87,8 @@ template <typename... ReaderTs> class Sequence {
     using ErrorCallback = std::function<void(
         const Error& err, const std::shared_ptr<Reader> reader)>;
 
+    using FinishCallback = std::function<void()>;
+
     template <typename... Args> Sequence(Args... args) : m_curr_offset(0) {
         std::get<0>(m_readers).m_enabled = true;
         std::get<0>(m_readers).m_reader = std::make_shared<
@@ -107,6 +109,8 @@ template <typename... ReaderTs> class Sequence {
 
     inline void on_error(ErrorCallback cb) { m_error_cb = cb; }
 
+    inline void on_finish(FinishCallback cb) { m_finish_cb = cb; }
+
   private:
     template <std::size_t... Is>
     inline void perform_reads(std::index_sequence<Is...>,
@@ -116,37 +120,41 @@ template <typename... ReaderTs> class Sequence {
 
     template <std::size_t I, std::enable_if_t<(I < ReaderCount), int> = 0>
     inline void perform_read(const std::vector<uint8_t>& data) {
-        std::shared_ptr reader = std::get<I>(m_readers).m_reader;
-        if (reader) {
-            if (m_curr_offset >= data.size()) {
-                m_curr_offset = 0;
-                return;
-            }
-
-            m_curr_offset = reader->read(data, m_curr_offset);
-            if (reader->is_ready()) {
-                std::get<I>(m_readers) = nullptr;
-                std::get<I + 1>(m_readers).m_reader =
-                    std::get<I>(m_reader_cbs)(reader);
-            }
+        if (read_impl(data)) {
+            std::get<I + 1>(m_readers).m_reader =
+                std::get<I>(m_reader_cbs)(reader);
         }
     }
 
     template <std::size_t I, std::enable_if_t<(I == ReaderCount), int> = 0>
     inline void perform_read(const std::vector<uint8_t>& data) {
-        if (std::get<I>(m_readers).m_reader) {
-
-            std::cout << "last " << std::get<I>(m_readers).m_reader->get_name()
-                      << std::endl;
+        if (read_impl(data)) {
+            std::get<I>(m_reader_cbs)(reader);
         }
     }
 
-    /*template <std::size_t... Is> void
-    init_readers(std::index_sequence<Is...>); template <std::size_t I,
-    typename ReaderT> void create_reader();*/
+    template <std::size_t I>
+    inline bool read_impl(const std::vector<uint8_t>& data) {
+        std::shared_ptr reader = std::get<I>(m_readers).m_reader;
+        if (reader) {
+            if (m_curr_offset >= data.size()) {
+                m_curr_offset = 0;
+                return false;
+            }
+
+            m_curr_offset = reader->read(data, m_curr_offset);
+            if (reader->is_ready()) {
+                std::get<I>(m_readers).m_reader = nullptr;
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     ReaderCallbackTuple m_reader_cbs;
     ErrorCallback m_error_cb;
+    FinishCallback m_finsh_cb;
 
     ReaderTuple m_readers;
 
