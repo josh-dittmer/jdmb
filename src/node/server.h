@@ -22,7 +22,8 @@ class Server {
 
       public:
         Connection(Private, std::shared_ptr<LoggerContext> logger_context)
-            : m_logger(logger_context->use("NodeConnection")) {}
+            : m_logger(logger_context->use("NodeConnection")),
+              m_packet_seq(stream::packet::create()) {}
         ~Connection() {}
 
         static std::shared_ptr<Connection>
@@ -38,7 +39,9 @@ class Server {
       private:
         Logger m_logger;
 
-        stream::packet::PacketSequence m_packet_seq;
+        std::string m_addr_str;
+
+        stream::packet::Sequence m_packet_seq;
     };
 
     Server(Private, std::shared_ptr<LoggerContext> logger_context,

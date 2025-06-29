@@ -57,18 +57,17 @@ _HEADERS += stream/packet/data_reader.h
 _OBJECTS += stream/packet/header_reader.o
 _HEADERS += stream/packet/header_reader.h
 
+_HEADERS += stream/packet/packet_sequence.h
+
 # stream
-_OBJECTS += stream/packet/data_reader.o
-_HEADERS += stream/packet/data_reader.h
+_HEADERS += stream/detail.h
 
-_OBJECTS += stream/packet/header_reader.o
-_HEADERS += stream/packet/header_reader.h
-
-_OBJECTS += stream/reader.o
 _HEADERS += stream/reader.h
 
-_OBJECTS += stream/sequence.o
-_HEADERS += stream/sequence.h
+_HEADERS += stream/sequence_reader.h
+
+_OBJECTS += stream/value_reader.o
+_HEADERS += stream/value_reader.h
 
 # util
 _OBJECTS += util/debug.o

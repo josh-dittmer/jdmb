@@ -6,27 +6,37 @@
 namespace node {
 
 void Server::Connection::on_connect(std::shared_ptr<tcp::Connection> tcp_conn) {
-    m_logger.log("[" + tcp_conn->get_addr_str() + "]: connected");
+    m_addr_str = tcp_conn->get_addr_str();
+
+    m_logger.log("[" + m_addr_str + "]: connected");
 
     m_packet_seq.on_ready<0>(
-        [&](const stream::packet::Header& header)
+        [&](const std::shared_ptr<stream::packet::Header>& header)
             -> std::shared_ptr<stream::packet::DataReader> {
+            std::cout << header->m_packet_len << std::endl;
             return std::make_shared<stream::packet::DataReader>(
-                header.m_packet_len);
+                header->m_packet_len);
         });
-    m_packet_seq.on_ready<1>([&](const stream::packet::Data& data) -> void {
-        std::cout << "Data size: " << data.m_data.size() << std::endl;
+    m_packet_seq.on_ready<1>(
+        [&](const std::shared_ptr<stream::packet::Data>& data) -> void {
+            std::cout << "Data size: " << data->m_data.size() << std::endl;
+        });
+    m_packet_seq.on_error(
+        [&](const std::string& reader_name, const Error& err) -> void {
+            m_logger.debug("[" + m_addr_str + "]: read error for " +
+                           reader_name + ": " + err);
+        });
+    m_packet_seq.on_finish([&]() -> void {
+        m_logger.log("[" + m_addr_str + "]: packet read finished");
     });
-
-    m_packet_seq.read({});
-
-    std::tuple_element_t<0, stream::packet::PacketSequence::ReaderTuple> t;
 }
 
 bool Server::Connection::on_message(std::shared_ptr<tcp::Connection> tcp_conn,
                                     const std::vector<uint8_t>& data) {
     m_logger.log("[" + tcp_conn->get_addr_str() + "]: received " +
                  std::to_string(data.size()) + " bytes");
+
+    m_packet_seq.read(data, 0);
     return true;
 }
 

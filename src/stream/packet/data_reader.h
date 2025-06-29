@@ -1,22 +1,21 @@
 #pragma once
 
-#include "../reader.h"
+#include "../value_reader.h"
 
 namespace stream {
 namespace packet {
 
 struct Data {
+    constexpr static const std::size_t MaxSize = 8192;
     std::vector<uint8_t> m_data;
 };
 
-class DataReader : public Reader<Data, 8192> {
+class DataReader : public ValueReader<Data, Data::MaxSize> {
   public:
-    static const int MaxDataSize = 8192;
-
-    DataReader(std::size_t size) : Reader("Data"), m_size(size) {}
+    DataReader(std::size_t size) : ValueReader("Data"), m_size(size) {}
     ~DataReader() {}
 
-    Result<Data> consume() const override;
+    Result<std::shared_ptr<Data>> consume() const override;
     bool should_stop_reading() const override;
 
   private:

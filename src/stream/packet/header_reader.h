@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../reader.h"
+#include "../value_reader.h"
 
 namespace stream {
 namespace packet {
@@ -9,12 +9,12 @@ struct Header {
     uint32_t m_packet_len;
 };
 
-class HeaderReader : public Reader<Header, sizeof(Header)> {
+class HeaderReader : public ValueReader<Header, sizeof(Header)> {
   public:
-    HeaderReader() : Reader("Header") {}
+    HeaderReader() : ValueReader("Header") {}
     ~HeaderReader() {}
 
-    Result<Header> consume() const override;
+    Result<std::shared_ptr<Header>> consume() const override;
     bool should_stop_reading() const override { return false; }
 };
 

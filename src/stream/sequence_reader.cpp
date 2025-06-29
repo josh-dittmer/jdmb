@@ -1,8 +1,3 @@
-#include "sequence.h"
-
-#include "packet/data_reader.h"
-#include "packet/header_reader.h"
-
 namespace stream {
 
 /*template <typename... ReaderTs> Sequence<ReaderTs...>::Sequence() {
