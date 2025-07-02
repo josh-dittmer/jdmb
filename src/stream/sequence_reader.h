@@ -18,24 +18,24 @@ template <typename ReaderT> struct ReaderAndState {
     std::shared_ptr<ReaderT> m_reader;
 };
 
-template <typename...> struct ReaderCallbackTupleBuilder;
+template <typename...> struct ReaderReadyCallbackTupleBuilder;
 
 template <typename C, typename N, typename... Rest>
-struct ReaderCallbackTupleBuilder<C, N, Rest...> {
+struct ReaderReadyCallbackTupleBuilder<C, N, Rest...> {
     using type = decltype(std::tuple_cat(
         std::tuple<std::function<std::shared_ptr<N>(
             const std::shared_ptr<detail::ReaderDataT<C>>&)>>{},
-        typename ReaderCallbackTupleBuilder<N, Rest...>::type{}));
+        typename ReaderReadyCallbackTupleBuilder<N, Rest...>::type{}));
 };
 
-template <typename L> struct ReaderCallbackTupleBuilder<L> {
+template <typename L> struct ReaderReadyCallbackTupleBuilder<L> {
     using type = std::tuple<
         std::function<void(const std::shared_ptr<detail::ReaderDataT<L>>&)>>;
 };
 
 template <typename... ReaderTs>
-using ReaderCallbackTuple =
-    typename ReaderCallbackTupleBuilder<ReaderTs...>::type;
+using ReaderReadyCallbackTuple =
+    typename ReaderReadyCallbackTupleBuilder<ReaderTs...>::type;
 
 template <typename... ReaderTs>
 using ReaderTuple = std::tuple<ReaderAndState<ReaderTs>...>;
@@ -52,9 +52,8 @@ class SequenceReader
     static constexpr std::size_t ReaderCount = sizeof...(ReaderTs);
 
     template <std::size_t I>
-    using ReaderCallbackTupleElementT =
-        std::tuple_element_t<I,
-                             sequence_detail::ReaderCallbackTuple<ReaderTs...>>;
+    using ReaderCallbackTupleElementT = std::tuple_element_t<
+        I, sequence_detail::ReaderReadyCallbackTuple<ReaderTs...>>;
 
     using ReaderTupleT = typename sequence_detail::ReaderTuple<ReaderTs...>;
 
@@ -152,7 +151,7 @@ class SequenceReader
 
             std::size_t bytes_read = reader->read(data, m_curr_offset);
 
-            m_curr_offset = bytes_read;
+            m_curr_offset += bytes_read;
             m_last_read += bytes_read;
 
             if (reader->is_ready()) {
@@ -176,7 +175,7 @@ class SequenceReader
         return nullptr;
     }
 
-    sequence_detail::ReaderCallbackTuple<ReaderTs...> m_reader_cbs;
+    sequence_detail::ReaderReadyCallbackTuple<ReaderTs...> m_reader_cbs;
     ErrorCallback m_error_cb;
     FinishCallback m_finsh_cb;
 

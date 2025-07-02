@@ -16,6 +16,7 @@ std::size_t ValueReader<T, MaxSize>::read(const std::vector<uint8_t>& data,
     for (i = 0;
          i + m_total_read + offset < data.size() && i + m_total_read < MaxSize;
          i++) {
+        std::cout << offset << " " << i << " " << m_total_read << std::endl;
         m_curr_data[i] = data[i + m_total_read + offset];
 
         if (should_stop_reading()) {
